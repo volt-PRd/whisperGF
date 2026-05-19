@@ -58,7 +58,6 @@ private class CpuInfo(private val lines: List<String>) {
             readCpuInfo().getHighPerfCpuCount()
         } catch (e: Exception) {
             Log.d(LOG_TAG, "Couldn't read CPU info", e)
-            // Fallback: use half the available cores
             (Runtime.getRuntime().availableProcessors() / 2).coerceIn(1, 4)
         }
 

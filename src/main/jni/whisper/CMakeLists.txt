@@ -4,7 +4,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 # Whisper.cpp source directory
 if(NOT DEFINED WHISPER_CPP_DIR)
-    set(WHISPER_CPP_DIR "${CMAKE_SOURCE_DIR}/../../../../../../..")
+    set(WHISPER_CPP_DIR "${CMAKE_SOURCE_DIR}/../../../../../../../..")
 endif()
 get_filename_component(WHISPER_CPP_DIR "${WHISPER_CPP_DIR}" ABSOLUTE)
 message(STATUS " WHISPER_CPP_DIR: ${WHISPER_CPP_DIR}")
@@ -21,8 +21,9 @@ endif()
 
 option(GGML_HOME "Path to external GGML source" OFF)
 
-# Vulkan GPU acceleration — requires Android NDK with Vulkan headers
+# GPU backends
 option(WHISPER_VULKAN "Enable Vulkan GPU backend" ON)
+option(WHISPER_HEXAGON "Enable Qualcomm Hexagon HTP/QNN backend" OFF)
 
 set(SOURCE_FILES
     ${WHISPER_CPP_DIR}/src/whisper.cpp
@@ -58,17 +59,23 @@ function(build_library target_name)
         target_link_options(${target_name} PRIVATE -flto)
     endif ()
 
-    # Fetch GGML with optional Vulkan support
+    # Fetch GGML
     if (GGML_HOME)
         FetchContent_Declare(ggml SOURCE_DIR ${GGML_HOME})
     else()
         FetchContent_Declare(ggml SOURCE_DIR ${WHISPER_CPP_DIR}/ggml)
     endif()
 
-    # Enable Vulkan in GGML if requested
+    # Enable Vulkan in GGML
     if (WHISPER_VULKAN)
         set(GGML_VULKAN ON CACHE BOOL "" FORCE)
         message(STATUS " Vulkan GPU: ENABLED for ${target_name}")
+    endif()
+
+    # Enable Qualcomm Hexagon HTP/QNN in GGML
+    if (WHISPER_HEXAGON)
+        set(GGML_HEXAGON ON CACHE BOOL "" FORCE)
+        message(STATUS " Hexagon HTP/QNN: ENABLED for ${target_name}")
     endif()
 
     FetchContent_MakeAvailable(ggml)
@@ -84,12 +91,23 @@ function(build_library target_name)
             target_link_libraries(${target_name} ${VULKAN_LIB})
             message(STATUS " Linked Vulkan: ${VULKAN_LIB}")
         else()
-            message(WARNING " Vulkan library not found — building CPU-only")
+            message(WARNING " Vulkan library not found - building CPU-only")
+        endif()
+    endif()
+
+    # Hexagon libraries (if available)
+    if (WHISPER_HEXAGON)
+        find_library(HEXAGON_LIB cdsp)
+        if (HEXAGON_LIB)
+            target_link_libraries(${target_name} ${HEXAGON_LIB})
+            message(STATUS " Linked Hexagon CDSP: ${HEXAGON_LIB}")
+        else()
+            message(WARNING " Hexagon CDSP library not found - Hexagon backend compiled but may fail at runtime")
         endif()
     endif()
 endfunction()
 
-# Build ABI-specific optimized variants
+# Build ABI-specific optimized variants (arm64-v8a only for v3.0.0)
 if (${ANDROID_ABI} STREQUAL "arm64-v8a")
     build_library("whisper_v8fp16_va")
 elseif (${ANDROID_ABI} STREQUAL "armeabi-v7a")
