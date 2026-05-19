@@ -5,9 +5,13 @@ import java.io.BufferedReader
 import java.io.FileReader
 
 object WhisperCpuConfig {
+    /**
+     * Returns the optimal thread count for inference.
+     * Uses high-performance core count (big cores on big.LITTLE).
+     * Minimum 1 thread, maximum 8 threads.
+     */
     val preferredThreadCount: Int
-        // Always use at least 2 threads:
-        get() = CpuInfo.getHighPerfCpuCount().coerceAtLeast(2)
+        get() = CpuInfo.getHighPerfCpuCount().coerceIn(1, 8)
 }
 
 private class CpuInfo(private val lines: List<String>) {
@@ -37,7 +41,6 @@ private class CpuInfo(private val lines: List<String>) {
         .sorted()
         .toList()
 
-
     private fun List<Int>.countDroppingMin(): Int {
         val min = min()
         return count { it > min }
@@ -55,8 +58,8 @@ private class CpuInfo(private val lines: List<String>) {
             readCpuInfo().getHighPerfCpuCount()
         } catch (e: Exception) {
             Log.d(LOG_TAG, "Couldn't read CPU info", e)
-            // Our best guess -- just return the # of CPUs minus 4.
-            (Runtime.getRuntime().availableProcessors() - 4).coerceAtLeast(0)
+            // Fallback: use half the available cores
+            (Runtime.getRuntime().availableProcessors() / 2).coerceIn(1, 4)
         }
 
         private fun readCpuInfo() = CpuInfo(
