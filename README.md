@@ -7,8 +7,26 @@ whisper.cpp Android AAR Library — Speech-to-Text for Android
 | الإصدار | الرابط | الحجم | المميزات |
 |---------|--------|-------|----------|
 | v3.0.0 | [whisper-android-v3.zip](release/whisper-android-v3.zip) | 5.3 MB | IQ-quants, Diarize, Speculative, Thermal, Downloader, VAD Reset |
+| v3.0.0 Test App | [whispergf-test.apk](test-app/release/whispergf-test.apk) | 21.5 MB | تطبيق جاهز للتجربة — حمل وثبّت مباشرة |
 | v2.0.0 | [Release v2.0.0](https://github.com/volt-PRd/whisperGF/releases/tag/v2.0.0) | 12 MB | VAD, Streaming, x86_64 |
 | v1.0.0 | [Release v1.0.0](https://github.com/volt-PRd/whisperGF/releases/tag/v1.0.0) | 6.8 MB | Basic |
+
+---
+
+## تطبيق تجريبي / Test App
+
+حمل ملف [whispergf-test.apk](test-app/release/whispergf-test.apk) وثبّته مباشرة على جهازك (arm64 فقط).
+
+### مميزات التطبيق:
+- واجهة داكنة احترافية
+- **اضغط مطولاً** للتسجيل الصوتي مباشرة
+- تحميل النماذج من HuggingFace بضغطة زر
+- اختيار ملف نموذج من الجهاز
+- 13 لغة مدعومة مع كشف تلقائي
+- خيارات VAD, Translate, Diarize, Hush Words
+- تحكم بعدد الخيوط (1-8)
+- عرض النتيجة مع طوابع زمنية وتحولات المتحدثين
+- نسخ النص للحافظة
 
 ---
 
