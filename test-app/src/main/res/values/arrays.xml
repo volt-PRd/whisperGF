@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="models">
+        <item>Tiny Q5_K_M (75MB)</item>
+        <item>Base Q5_K_M (142MB)</item>
+        <item>Small Q5_K_M (466MB)</item>
+        <item>Medium IQ4_XS (~600MB)</item>
+        <item>Large-v3-Turbo Q5_K_M (809MB)</item>
+        <item>Tiny Diarize (75MB)</item>
+        <item>Base Diarize (142MB)</item>
+    </string-array>
+    <string-array name="languages">
+        <item>Auto Detect</item>
+        <item>Arabic (ar)</item>
+        <item>English (en)</item>
+        <item>French (fr)</item>
+        <item>Spanish (es)</item>
+        <item>German (de)</item>
+        <item>Turkish (tr)</item>
+        <item>Chinese (zh)</item>
+        <item>Japanese (ja)</item>
+        <item>Korean (ko)</item>
+        <item>Russian (ru)</item>
+        <item>Hindi (hi)</item>
+        <item>Urdu (ur)</item>
+    </string-array>
+    <string-array name="lang_codes">
+        <item></item>
+        <item>ar</item>
+        <item>en</item>
+        <item>fr</item>
+        <item>es</item>
+        <item>de</item>
+        <item>tr</item>
+        <item>zh</item>
+        <item>ja</item>
+        <item>ko</item>
+        <item>ru</item>
+        <item>hi</item>
+        <item>ur</item>
+    </string-array>
+</resources>

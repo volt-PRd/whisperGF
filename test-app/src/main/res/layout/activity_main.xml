@@ -1,0 +1,390 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="#0D1117">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <!-- Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="20dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="WhisperGF v3.0.0"
+                android:textColor="#58A6FF"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvSystemInfo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="arm64"
+                android:textColor="#8B949E"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <!-- Model Status Card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#161B22"
+            android:padding="16dp"
+            android:layout_marginBottom="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Model"
+                android:textColor="#8B949E"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvModelStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="No model loaded"
+                android:textColor="#F85149"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/tvModelInfo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text=""
+                android:textColor="#8B949E"
+                android:textSize="11sp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="10dp">
+
+                <Button
+                    android:id="@+id/btnDownloadModel"
+                    android:layout_width="0dp"
+                    android:layout_height="42dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    android:text="Download Model"
+                    android:textSize="12sp"
+                    android:backgroundTint="#238636" />
+
+                <Button
+                    android:id="@+id/btnPickModel"
+                    android:layout_width="0dp"
+                    android:layout_height="42dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    android:text="Pick File"
+                    android:textSize="12sp"
+                    android:backgroundTint="#30363D"
+                    android:textColor="#C9D1D9" />
+            </LinearLayout>
+
+            <!-- Download Progress -->
+            <ProgressBar
+                android:id="@+id/progressDownload"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="8dp"
+                android:layout_marginTop="8dp"
+                android:visibility="gone"
+                android:max="100"
+                android:progressTint="#58A6FF"
+                android:progressBackgroundTint="#21262D" />
+
+            <TextView
+                android:id="@+id/tvDownloadStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text=""
+                android:textColor="#58A6FF"
+                android:textSize="11sp"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <!-- Config Card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#161B22"
+            android:padding="16dp"
+            android:layout_marginBottom="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Configuration"
+                android:textColor="#8B949E"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <Spinner
+                android:id="@+id/spinnerModel"
+                android:layout_width="match_parent"
+                android:layout_height="42dp"
+                android:layout_marginTop="8dp"
+                android:background="#21262D"
+                android:padding="8dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
+
+                <CheckBox
+                    android:id="@+id/cbVad"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="VAD"
+                    android:textColor="#C9D1D9"
+                    android:buttonTint="#58A6FF" />
+
+                <CheckBox
+                    android:id="@+id/cbTranslate"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Translate"
+                    android:textColor="#C9D1D9"
+                    android:buttonTint="#58A6FF" />
+
+                <CheckBox
+                    android:id="@+id/cbDiarize"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Diarize"
+                    android:textColor="#C9D1D9"
+                    android:buttonTint="#58A6FF" />
+
+                <CheckBox
+                    android:id="@+id/cbHush"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Hush"
+                    android:textColor="#C9D1D9"
+                    android:checked="true"
+                    android:buttonTint="#58A6FF" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Language:"
+                    android:textColor="#8B949E"
+                    android:textSize="13sp" />
+
+                <Spinner
+                    android:id="@+id/spinnerLang"
+                    android:layout_width="0dp"
+                    android:layout_height="42dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:background="#21262D" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Threads:"
+                    android:textColor="#8B949E"
+                    android:textSize="13sp" />
+
+                <SeekBar
+                    android:id="@+id/seekBarThreads"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:max="8"
+                    android:progress="4"
+                    android:progressTint="#58A6FF"
+                    android:progressBackgroundTint="#21262D" />
+
+                <TextView
+                    android:id="@+id/tvThreadCount"
+                    android:layout_width="24dp"
+                    android:layout_height="wrap_content"
+                    android:text="4"
+                    android:textColor="#C9D1D9"
+                    android:textSize="13sp"
+                    android:gravity="center" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Record Button -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_marginBottom="12dp">
+
+            <Button
+                android:id="@+id/btnRecord"
+                android:layout_width="160dp"
+                android:layout_height="56dp"
+                android:text="Hold to Record"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:backgroundTint="#DA3633" />
+        </LinearLayout>
+
+        <!-- Timer -->
+        <TextView
+            android:id="@+id/tvTimer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="00:00"
+            android:textColor="#8B949E"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:fontFamily="monospace"
+            android:layout_marginBottom="12dp"
+            android:visibility="gone" />
+
+        <!-- Transcription Result Card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#161B22"
+            android:padding="16dp"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Transcription"
+                    android:textColor="#8B949E"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvInferenceTime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    android:textColor="#8B949E"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvResult"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Press and hold the record button to start..."
+                android:textColor="#484F58"
+                android:textSize="14sp"
+                android:lineSpacingExtra="4dp"
+                android:minHeight="100dp" />
+
+            <Button
+                android:id="@+id/btnCopy"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:layout_gravity="end"
+                android:layout_marginTop="8dp"
+                android:text="Copy"
+                android:textSize="12sp"
+                android:backgroundTint="#21262D"
+                android:textColor="#C9D1D9"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <!-- Log Card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#161B22"
+            android:padding="16dp"
+            android:layout_marginBottom="20dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Log"
+                android:textColor="#8B949E"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="150dp"
+                android:layout_marginTop="8dp"
+                android:background="#0D1117">
+
+                <TextView
+                    android:id="@+id/tvLog"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    android:textColor="#238636"
+                    android:textSize="10sp"
+                    android:fontFamily="monospace"
+                    android:padding="8dp" />
+            </ScrollView>
+
+            <Button
+                android:id="@+id/btnClearLog"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:layout_gravity="end"
+                android:layout_marginTop="4dp"
+                android:text="Clear"
+                android:textSize="11sp"
+                android:backgroundTint="#21262D"
+                android:textColor="#8B949E" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>
