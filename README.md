@@ -4,31 +4,48 @@ whisper.cpp Android AAR Library - Speech-to-Text for Android
 
 ## التحميل / Download
 
-| الإصدار | الرابط | الحجم | ABI |
-|---------|--------|-------|-----|
-| v2.0.0 | [whisper-android.zip](release/whisper-android.zip) | 12 MB | arm64-v8a + x86_64 |
-| v1.0.0 | [Release v1.0.0](https://github.com/volt-PRd/whisperGF/releases/tag/v1.0.0) | 6.8 MB | arm64-v8a |
+| الإصدار | الرابط | الحجم | المميزات |
+|---------|--------|-------|----------|
+| v3.0.0 | [whisper-android.zip](release/whisper-android.zip) | 12 MB | K-quants, Flash Attention, RAII, Hush Words, Local Agreement |
+| v2.0.0 | [Release v2.0.0](https://github.com/volt-PRd/whisperGF/releases/tag/v2.0.0) | 12 MB | VAD, Streaming, x86_64 |
+| v1.0.0 | [Release v1.0.0](https://github.com/volt-PRd/whisperGF/releases/tag/v1.0.0) | 6.8 MB | Basic |
 
 ---
 
-## ما الجديد في v2.0.0 / What's New in v2.0.0
+## ما الجديد في v3.0.0 / What's New in v3.0.0
 
-| الميزة | الوصف |
-|--------|-------|
-| Quantized Models | دعم نماذج q4_0, q5_0, q8_0 تلقائياً — تقليل استهلاك RAM بنسبة تصل إلى 45% |
-| VAD | Voice Activity Detection — تخطي الأجزاء الصامتة وتسريع المعالجة |
-| Context Size | التحكم في `n_max_text_ctx` — خفضه إلى 256 يوفر ~30% ذاكرة إضافية |
-| Thread Control | `numThreads` كمعامل — افتراضي ذكي: min(big_cores, 8) |
-| Streaming | `transcribeStream()` معالجة chunks — تقليل ذروة RAM بنسبة ~40% |
-| x86_64 ABI | دعم المحاكيات والأجهزة x86_64 بجانب arm64-v8a |
+### أولاً: تقليل استهلاك الذاكرة (RAM)
+
+| الميزة | الوصف | التأثير |
+|--------|-------|---------|
+| **GPU/mmap** | تفعيل `use_gpu=true` يُفعّل backend ذكي يستخدم mmap لتحميل النماذج | تحميل فوري + تقليل RSS |
+| **K-quants (GGUF)** | دعم Q4_K_M, Q5_K_M, Q6_K, Q8_K | توزيع البتات الذكي — دقة أعلى بحجم أقل |
+| **Context Size** | `maxTextCtx` قابل للتخصيص (256–448) | توفير 30% ذاكرة إضافية |
+
+### ثانياً: تسريع الاستخراج (Inference Speed)
+
+| الميزة | الوصف | التأثير |
+|--------|-------|---------|
+| **Flash Attention** | مُفعّل افتراضياً في whisper.cpp | 20-50% أسرع في المقاطع الطويلة |
+| **ARMv8.2 FP16** | نسخة محسّنة لـ arm64-v8a | استغلال تعليمات FP16 |
+| **Vulkan GPU** | خيار بنائي متاح (`WHISPER_VULKAN=ON`) | 10-15% تسريع إضافي |
+| **Large-v3-Turbo** | مدعوم تلقائياً (4 طبقات decoder) | 8x أسرع من large-v3 |
+
+### ثالثاً: تحسين تجربة المطور
+
+| الميزة | الوصف | التأثير |
+|--------|-------|---------|
+| **RAII في JNI** | مغلفات C++ لـ jstring, jfloatArray | منع تسريبات الذاكرة |
+| **carry_initial_prompt** | حمل سياق الشريح السابق | اتساق المصطلحات في Streaming |
+| **Hush Words** | إضافة 0.5s صمت تلقائي | منع هلوسة النموذج |
+| **Local Agreement Policy** | `LocalAgreementPolicy` في Kotlin | منع تذبذب النص في البث |
+| **K-quants auto-detect** | كشف تلقائي من رأس GGUF | دعم شامل لكل أنواع التكميم |
 
 ---
 
 ## طريقة الاستخدام / Usage
 
-### 1. التثبيت / Installation
-
-انسخ ملف `whisper-android.aar` إلى مجلد `app/libs/` في مشروعك، وأضف التبعية في `build.gradle`:
+### 1. التثبيت
 
 ```groovy
 dependencies {
@@ -37,80 +54,86 @@ dependencies {
 }
 ```
 
-### 2. الاستخدام الأساسي / Basic Usage
+### 2. الاستخدام الأساسي
 
 ```kotlin
-import com.whispercpp.whisper.WhisperContext
-
-// تحميل النموذج (يدعم FP32 و quantized تلقائياً)
-val ctx = WhisperContext.createContextFromFile("/path/to/model.bin")
-
-// معلومات النموذج
+val ctx = WhisperContext.createContextFromFile("model.bin")
 val info = ctx.getModelInfo()
-println("Quantization: ${info.quantizationName}")  // مثلاً: "Q4_0 (4-bit, ~45% less RAM)"
+println("Model: ${info.modelName} (${info.quantizationName})")
+println("Is quantized: ${info.isQuantized}")
 
-// تحويل صوت إلى نص
-val result = ctx.transcribe(audioFloatArray)
+val result = ctx.transcribe(audioData)
 println(result.fullText)
-
-// تحرير الذاكرة
 ctx.release()
 ```
 
-### 3. استخدام متقدم / Advanced Usage
+### 3. استخدام متقدم — كل المميزات الجديدة
 
 ```kotlin
-import com.whispercpp.whisper.*
-
-// إعدادات مخصصة
 val config = TranscribeConfig(
-    numThreads = 4,              // عدد خيوط المعالجة (افتراضي: تلقائي)
-    maxTextCtx = 256,            // تقليل الذاكرة (افتراضي: 448)
-    language = "ar",             // لغة محددة، أو null للكشف التلقائي
-    detectLanguage = false,      // تفعيل/تعطيل كشف اللغة
-    translate = false,           // ترجمة للإنجليزية
-    enableVad = true,            // تفعيل VAD لتخطي الصمت
-    vadThreshold = 0.4f          // حساسية VAD (0.0–1.0)
+    numThreads = 4,
+    maxTextCtx = 256,           // توفير ذاكرة
+    language = "ar",
+    detectLanguage = false,
+    translate = false,
+    enableVad = true,           // تخطي الصمت
+    vadThreshold = 0.4f,
+    carryInitialPrompt = true,  // استمرارية السياق
+    initialPrompt = "المحادثة تتحدث عن الذكاء الاصطناعي",
+    enableHushWords = true      // منع الهلوسة
 )
 
-val ctx = WhisperContext.createContextFromFile("/path/to/model.bin")
+val ctx = WhisperContext.createContextFromFile("ggml-large-v3-turbo-q4_k_m.bin")
 
-// تحويل عادي (كامل الملف في الذاكرة)
+// تحويل كامل
 val result = ctx.transcribe(audioData, config)
 
-// أو معالجة تدفقية (أقل استهلاك RAM)
-val streamResult = ctx.transcribeStream(audioData, config)
-
-// الوصول للنتائج التفصيلية
-for (seg in result.segments) {
-    println("[${seg.t0Ms}ms → ${seg.t1Ms}ms] ${seg.text}")
-    println("No-speech probability: ${seg.noSpeechProb}")
-}
+// أو تحويل تدفقي مع Local Agreement Policy
+val policy = LocalAgreementPolicy(minConfirmations = 2)
+val streamResult = ctx.transcribeStream(audioChunks, config)
+val stableText = policy.process(streamResult)
+println(stableText)
 
 ctx.release()
 ```
 
-### 4. تحميل من Assets
+### 4. Local Agreement Policy — منع تذبذب النص
 
 ```kotlin
-val ctx = WhisperContext.createContextFromAsset(assetManager, "models/ggml-base-q4_0.bin")
+val policy = LocalAgreementPolicy(minConfirmations = 2)
+
+// في حلقة البث المباشر:
+// في كل مرة تصل نتيجة جديدة من الـ stream
+val result = ctx.transcribeStream(currentChunk, config)
+val stableText = policy.process(result)
+
+// عرض stableText فقط — النص لن يتغير أمام المستخدم
+textView.text = stableText
 ```
 
-### 5. نماذج Quantized / Quantized Models
+### 5. Hush Words — منع الهلوسة
 
-المكتبة تكتشف نوع النموذج تلقائياً من رأس الملف. ما عليك سوى تحميل ملف النموذج:
-
-| النوع | حجم النموذج ( تقريباً) | توفير RAM | الدقة |
-|-------|----------------------|-----------|------|
-| FP32 (الافتراضي) | 1.5 GB | — | 100% |
-| Q8_0 | ~500 MB | ~20% أقل | ~99% |
-| Q5_0 | ~400 MB | ~35% أقل | ~98% |
-| Q4_0 | ~300 MB | ~45% أقل | ~97% |
-
-لتحويل نموذج إلى quantized، استخدم أداة `quantize` من whisper.cpp:
-```bash
-./quantize models/ggml-base.bin models/ggml-base-q4_0.bin q4_0
+```kotlin
+// مفعّل افتراضياً. يضيف 0.5 ثانية صمت لنهاية الصوت
+val config = TranscribeConfig(enableHushWords = true)
+val result = ctx.transcribe(audioData, config)
+// لن تحدث هلوسة أو تكرار في نهاية المقاطع الصامتة
 ```
+
+---
+
+## نماذج Quantized / Quantized Models
+
+| النوع | حجم النموذج (تقريبي) | توفير RAM | الدقة | الأفضل لـ |
+|-------|----------------------|-----------|------|----------|
+| FP32 | 1.5 GB | — | 100% | الدقة القصوى |
+| Q8_0 | ~500 MB | 20% | ~99% | توازن ممتاز |
+| Q6_K | ~400 MB | 30% | ~98.5% | دقة عالية |
+| **Q5_K_M** | **~350 MB** | **35%** | **~98%** | **أفضل دقة/حجم** |
+| **Q4_K_M** | **~300 MB** | **45%** | **~97%** | **الأفضل للأجهزة الضعيفة** |
+| Q4_0 | ~280 MB | 45% | ~97% | الأجهزة ذات RAM محدود جداً |
+
+> Q4_K_M و Q5_K_M يستخدمان تقنية توزيع البتات غير المتساوي — بتات أكثر للطبقات الحرجة وبتات أقل للطبقات الأقل أهمية.
 
 ---
 
@@ -119,63 +142,62 @@ val ctx = WhisperContext.createContextFromAsset(assetManager, "models/ggml-base-
 | الخاصية | القيمة |
 |---------|--------|
 | Min SDK | 26 (Android 8.0) |
-| Target SDK | 34 |
 | ABIs | arm64-v8a, x86_64 |
 | Kotlin | 1.9.0+ |
-| NDK | r25c (25.2.9519653) |
-| C++ Standard | C++17 |
+| Flash Attention | مُفعّل افتراضياً |
+| Vulkan GPU | متاح كخيار بنائي |
 
 ---
 
-## واجهة برمجة التطبيق / API Reference
+## API Reference
 
 ### `WhisperContext`
 
 | الدالة | الوصف |
 |--------|-------|
-| `createContextFromFile(path)` | تحميل نموذج من ملف |
-| `createContextFromAsset(am, path)` | تحميل نموذج من Assets |
-| `createContextFromInputStream(stream)` | تحميل نموذج من InputStream |
-| `getModelInfo()` | معلومات النموذج (نوع التكميم، حجم السياق) |
-| `transcribe(data, config)` | تحويل صوت لنص (وضع كامل) |
-| `transcribeStream(data, config)` | تحويل صوت لنص (وضع تدفقي — أقل RAM) |
-| `transcribeData(data, timestamps)` | تحويل بسيط (متوافق مع v1) |
-| `getSystemInfo()` | معلومات النظام |
-| `benchMemory(n)` | اختبار الذاكرة |
-| `benchGgmlMulMat(n)` | اختبار المصفوفات |
+| `createContextFromFile(path, useGpu=true)` | تحميل نموذج مع GPU/mmap |
+| `createContextFromAsset(am, path, useGpu=true)` | تحميل من Assets |
+| `getModelInfo()` | معلومات النموذج (النوع، التكميم، السياق) |
+| `transcribe(data, config)` | تحويل كامل |
+| `transcribeStream(data, config)` | تحويل تدفقي (أقل RAM) |
+| `transcribeData(data, timestamps)` | تحويل بسيط (متوافق v1/v2) |
+| `getSystemInfo()` | معلومات GGML backend |
 | `release()` | تحرير الذاكرة |
 
 ### `TranscribeConfig`
 
 | المعامل | الافتراضي | الوصف |
 |---------|-----------|-------|
-| `numThreads` | تلقائي (big cores) | عدد خيوط المعالجة (1–8) |
-| `maxTextCtx` | 448 | الحد الأقصى لـ tokens السياق (256 للذاكرة المنخفضة) |
-| `language` | null (كشف تلقائي) | رمز اللغة ("en", "ar", "fr") |
-| `detectLanguage` | true | كشف اللغة تلقائياً |
+| `numThreads` | تلقائي | خيوط المعالجة (1–8) |
+| `maxTextCtx` | 448 | حد السياق (256 للذاكرة المنخفضة) |
+| `language` | null | رمز اللغة أو null للكشف التلقائي |
+| `detectLanguage` | true | كشف اللغة التلقائي |
 | `translate` | false | ترجمة للإنجليزية |
-| `enableVad` | false | تفعيل كشف النشاط الصوتي |
-| `vadThreshold` | 0.5 | عتبة حساسية VAD |
+| `enableVad` | false | كشف النشاط الصوتي |
+| `vadThreshold` | 0.5 | عتبة VAD |
+| `carryInitialPrompt` | true | استمرارية السياق بين الأجزاء |
+| `initialPrompt` | null | محفز نصي أولي |
+| `enableHushWords` | true | منع هلوسة النموذج |
 
-### `TranscribeResult`
+### `LocalAgreementPolicy`
+
+| الدالة | الوصف |
+|--------|-------|
+| `process(result)` | معالجة النتيجة وإرجاع نص مستقر |
+| `getStableText()` | النص المؤكد |
+| `reset()` | إعادة تعيين |
+
+### `ModelInfo`
 
 | الحقل | الوصف |
 |-------|-------|
-| `fullText` | النص الكامل |
-| `segments` | قائمة الشرائح مع الطوابع الزمنية |
-| `language` | اللغة المكتشفة/المحددة |
-
-### `TranscribeSegment`
-
-| الحقل | الوصف |
-|-------|-------|
-| `text` | نص الشريحة |
-| `t0Ms` | بداية الشريحة (ميلي ثانية) |
-| `t1Ms` | نهاية الشريحة (ميلي ثانية) |
-| `noSpeechProb` | احتمال عدم وجود كلام (0.0–1.0) |
+| `modelName` | tiny/base/small/medium/large/large-v3-turbo |
+| `quantizationName` | FP32/Q4_0/Q4_K_M/Q5_K_M/Q8_0 |
+| `isQuantized` | هل النموذج مُكمّم |
+| `textCtx` / `audioCtx` | أحجام السياق |
 
 ---
 
 ## الترخيص / License
 
-هذه المكتبة مبنية على [whisper.cpp](https://github.com/ggerganov/whisper.cpp) المرخص تحت رخصة MIT.
+مبنية على [whisper.cpp](https://github.com/ggerganov/whisper.cpp) — رخصة MIT.

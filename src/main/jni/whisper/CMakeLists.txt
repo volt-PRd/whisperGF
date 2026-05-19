@@ -1,48 +1,40 @@
 cmake_minimum_required(VERSION 3.10)
-
 project(whisper.cpp)
-
 set(CMAKE_CXX_STANDARD 17)
 
-# Path to whisper.cpp source tree
-# When building via Gradle, this resolves via the 6-level relative path.
-# For standalone builds, set -DWHISPER_CPP_DIR=/path/to/whisper.cpp
+# Whisper.cpp source directory
 if(NOT DEFINED WHISPER_CPP_DIR)
     set(WHISPER_CPP_DIR "${CMAKE_SOURCE_DIR}/../../../../../../..")
 endif()
 get_filename_component(WHISPER_CPP_DIR "${WHISPER_CPP_DIR}" ABSOLUTE)
-
 message(STATUS " WHISPER_CPP_DIR: ${WHISPER_CPP_DIR}")
 
-# Get whisper.cpp version
-file(READ "${WHISPER_CPP_DIR}/CMakeLists.txt" MAIN_CMAKE_CONTENT)
-string(REGEX MATCH "project\\(\"whisper\\.cpp\" VERSION ([0-9]+\\.[0-9]+\\.[0-9]+)\\)" VERSION_MATCH "${MAIN_CMAKE_CONTENT}")
+# Version detection
+file(READ "${WHISPER_CPP_DIR}/CMakeLists.txt" MAIN_CMAKE)
+string(REGEX MATCH "project\\(\"whisper\\.cpp\" VERSION ([0-9]+\\.[0-9]+\\.[0-9]+)\\)" _VM "${MAIN_CMAKE}")
 if(CMAKE_MATCH_1)
-    set(WHISPER_VERSION ${CMAKE_MATCH_1} PARENT_SCOPE)
+    set(WHISPER_VERSION ${CMAKE_MATCH_1})
     message(STATUS " Whisper version: ${WHISPER_VERSION}")
 else()
-    set(WHISPER_VERSION "unknown" PARENT_SCOPE)
-    message(WARNING " Could not detect whisper.cpp version")
+    set(WHISPER_VERSION "unknown")
 endif()
 
-option(GGML_HOME "whisper: Path to external GGML source" OFF)
+option(GGML_HOME "Path to external GGML source" OFF)
 
-set(
-    SOURCE_FILES
+# Vulkan GPU acceleration — requires Android NDK with Vulkan headers
+option(WHISPER_VULKAN "Enable Vulkan GPU backend" ON)
+
+set(SOURCE_FILES
     ${WHISPER_CPP_DIR}/src/whisper.cpp
-    ${CMAKE_SOURCE_DIR}/jni.c
-    )
+    ${CMAKE_SOURCE_DIR}/jni.cpp
+)
 
 find_library(LOG_LIB log)
 
 include(FetchContent)
 
 function(build_library target_name)
-    add_library(
-        ${target_name}
-        SHARED
-        ${SOURCE_FILES}
-    )
+    add_library(${target_name} SHARED ${SOURCE_FILES})
 
     target_compile_definitions(${target_name} PUBLIC GGML_USE_CPU)
     target_compile_definitions(${target_name} PRIVATE WHISPER_VERSION="${WHISPER_VERSION}")
@@ -50,13 +42,13 @@ function(build_library target_name)
     # ARM-specific optimizations
     if (${target_name} STREQUAL "whisper_v8fp16_va")
         target_compile_options(${target_name} PRIVATE -march=armv8.2-a+fp16)
-        set(GGML_COMPILE_OPTIONS                      -march=armv8.2-a+fp16)
+        set(GGML_COMPILE_OPTIONS -march=armv8.2-a+fp16)
     elseif (${target_name} STREQUAL "whisper_vfpv4")
         target_compile_options(${target_name} PRIVATE -mfpu=neon-vfpv4)
-        set(GGML_COMPILE_OPTIONS                      -mfpu=neon-vfpv4)
+        set(GGML_COMPILE_OPTIONS -mfpu=neon-vfpv4)
     endif ()
 
-    # Release optimizations: -O3, LTO, dead code stripping
+    # Release optimizations
     if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug")
         target_compile_options(${target_name} PRIVATE -O3)
         target_compile_options(${target_name} PRIVATE -fvisibility=hidden -fvisibility-inlines-hidden)
@@ -66,26 +58,44 @@ function(build_library target_name)
         target_link_options(${target_name} PRIVATE -flto)
     endif ()
 
-    # Fetch GGML
+    # Fetch GGML with optional Vulkan support
     if (GGML_HOME)
         FetchContent_Declare(ggml SOURCE_DIR ${GGML_HOME})
     else()
         FetchContent_Declare(ggml SOURCE_DIR ${WHISPER_CPP_DIR}/ggml)
     endif()
+
+    # Enable Vulkan in GGML if requested
+    if (WHISPER_VULKAN)
+        set(GGML_VULKAN ON CACHE BOOL "" FORCE)
+        message(STATUS " Vulkan GPU: ENABLED for ${target_name}")
+    endif()
+
     FetchContent_MakeAvailable(ggml)
     target_compile_options(ggml PRIVATE ${GGML_COMPILE_OPTIONS})
+
+    # Link libraries
     target_link_libraries(${target_name} ${LOG_LIB} android ggml)
 
+    # Vulkan libraries
+    if (WHISPER_VULKAN)
+        find_library(VULKAN_LIB vulkan)
+        if (VULKAN_LIB)
+            target_link_libraries(${target_name} ${VULKAN_LIB})
+            message(STATUS " Linked Vulkan: ${VULKAN_LIB}")
+        else()
+            message(WARNING " Vulkan library not found — building CPU-only")
+        endif()
+    endif()
 endfunction()
 
-# Build ABI-specific optimized variants (ARM only)
+# Build ABI-specific optimized variants
 if (${ANDROID_ABI} STREQUAL "arm64-v8a")
     build_library("whisper_v8fp16_va")
 elseif (${ANDROID_ABI} STREQUAL "armeabi-v7a")
     build_library("whisper_vfpv4")
 endif ()
 
-# Always build the default portable target
 build_library("whisper")
 
 include_directories(
